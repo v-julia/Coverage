@@ -49,10 +49,11 @@ def find_coverage(input_file, reference, path_to_blast):
 
     #blast against reference sequences
     subprocess.call(blastn_command, shell=True)
+    print("{out_path}blast_{ref}.out".format(out_path = output_dir, ref=ref_id))
     blast_table = "{out_path}blast_{ref}.out".format(out_path = output_dir, ref=ref_id)
 
     #dataframe with blast results
-    blast_output = pd.read_csv(blast_table, sep='\t', header = None, \
+    blast_out_df = pd.read_csv(blast_table, sep='\t', header = None, \
                                 names=['qseqid','sseqid','pident','length','mismatch',\
                                 'gapopen','qstart','qend','sstart','send','evalue','bitscore'])
 

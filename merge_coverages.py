@@ -139,11 +139,12 @@ def merges_coverage(input_dir, out_dir, path_alignment, title, first_name):
 
     final_coverage_nogap = []
     for i in range(len(final_coverage)):
-        if i > 800 and i < 1200:
-            if final_coverage[i] < 500:
+        if i > 100 and i < 8000:
+            if final_coverage[i] < 200:
                 continue
             else:
                 final_coverage_nogap.append(final_coverage[i])
+        '''
         else:
             if i < 3100 and i > 2900:
                 if final_coverage[i]<200:
@@ -152,7 +153,7 @@ def merges_coverage(input_dir, out_dir, path_alignment, title, first_name):
                     final_coverage_nogap.append(final_coverage[i])
             else:
                     final_coverage_nogap.append(final_coverage[i])
-
+        '''
         '''
         if i > 100 and i < 3100:
             if final_coverage[i] < 50:
@@ -203,9 +204,9 @@ if __name__ == "__main__":
     parser.add_argument("-al", "--alignment", type=str,
                         help="Path to file with alignment of reference sequences", required=True)
     parser.add_argument("-t", "--title", type=str,
-                        help="Title of output file", required=True)
+                        help="Title of output file figure", required=True)
     parser.add_argument("-f", "--first", type=str,
-                        help="The first output file", required=True)
+                        help="The first blast output file", required=True)
     args = parser.parse_args()
 
     pos_coverage = merges_coverage(args.input_dir, args.output_dir, args.alignment, args.title, args.first)
