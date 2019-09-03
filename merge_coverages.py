@@ -3,87 +3,20 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 import pandas as pd
+from pathlib import Path
 from time import time
 from Bio import SeqIO
 
-
-def compare_blast_out(blast_output1, blast_output2):
-    '''
-    Compares two dataframes, returns the second dataframe with the rows which 
-    first column values (qseqid) are absent in the first column of the first dataframe
-
-    Input:
-        blast_output1 - str - path to file with the first dataframe
-        blast_output2 - str - path to file with the second dataframe
-
-    Output:
-        blast_output2df - pandas dataframe - blast_output2 with rows which first columns
-        are absent in blast_output1 dataframe
-    '''
-
-    blast_output1df = pd.read_csv(blast_output1, sep='\t', header = None, \
-                                names=['qseqid','sseqid','pident','length','mismatch',\
-                                'gapopen','qstart','qend','sstart','send','evalue','bitscore'])
-    blast_output2df = pd.read_csv(blast_output2, sep='\t', header = None, \
-                                names=['qseqid','sseqid','pident','length','mismatch',\
-                                'gapopen','qstart','qend','sstart','send','evalue','bitscore'])
-
-    #get the rows of blast_table2 which query names absent in blast_table1
-    blast_output2df = blast_output2df[:][blast_output2df['qseqid'].isin(blast_output1df['qseqid']) != True]
-
-    return blast_output2df #.transpose()
-
-
-def make_pos_list(record_seq):
-    '''
-    Creates a list with length equal to reference alignment length, which indicates 
-    which positions of sequence are gaps
-    Input:
-        record_seq - str - nucleotide sequences from alignment
-    Output - list - pos_list - list looks like like [0,0,1,2,0,0,3,4,5], 
-    where zero-elements correspond to positions with gaps, and the other
-    elements are serial numbers of nucleotides0
-    '''
-    pos_list = []
-    k=1
-    for i in range(len(record_seq)):
-        if record_seq[i] != '-':
-            pos_list.append(k)
-            k+=1
-        else:
-            pos_list.append(0)
-    return pos_list
-
-def make_cov_list(blast_out_df, reference_length):
-    '''
-    Creates list with coverage of each sequence position for one blast output table
-    
-    Input:
-        record_seq - str - nucleotide sequence
-        reference_length - int - length of reference sequence blast was run against
-    Output:
-        pos_coverage - list - list with coverage values for each position in the sequence
-        blast was run against.
-    '''
-
-    #ID of reference seq blast was performed against
-    ref_id = blast_out_df['sseqid'][list(blast_out_df.index)[0]]
-
-    # list for sequence counts in each position of reference sequence
-    pos_coverage = [0]*reference_length
-
-    # adds counts to pos_coverage list according to blast hits in blast_output
-
-    def add_cov(row):
-        for i in range(row["sstart"]-1, row["send"], 1):
-            #pos_coverage[rel_pos_list.index(i)] +=1
-            pos_coverage[i] +=1
-
-    blast_out_df.apply(add_cov, axis=1)
-
-    return pos_coverage
-
 def merges_coverage(input_dir, out_dir, path_alignment, title, first_name):
+    '''
+    Input:
+        input_dir - str - directory with blast results
+        out_dir - str - directory to save output files
+        path_alignment - str - path to the alignment of sequences which were
+                        used as references for blast searches
+        title - 
+    '''
+
     #input_dir = os.getcwd()
     blast_outputs_names = os.listdir(input_dir)
 
@@ -92,7 +25,7 @@ def merges_coverage(input_dir, out_dir, path_alignment, title, first_name):
     blast_out_dict = {}
 
     # reading the first df
-    blast_out_dict[first_name] = pd.read_csv(os.path.join(input_dir,first_name), sep='\t', header = None, \
+    blast_out_dict[first_name] = pd.read_csv(Path(input_dir,first_name), sep='\t', header = None, \
                                     names=['qseqid','sseqid','pident','length','mismatch',\
                                     'gapopen','qstart','qend','sstart','send','evalue','bitscore']) #.transpose()
 
@@ -104,7 +37,7 @@ def merges_coverage(input_dir, out_dir, path_alignment, title, first_name):
             continue
         else:
             print(name)
-            blast_out_dict[name] = compare_blast_out(os.path.join(input_dir,first_name),os.path.join(input_dir,name))
+            blast_out_dict[name] = compare_blast_out(Path(input_dir,first_name),Path(input_dir,name))
             print(len(blast_out_dict[name]))
     # print(blast_out_dict["blast_AY593810.1.out"])
 
@@ -193,6 +126,86 @@ def merges_coverage(input_dir, out_dir, path_alignment, title, first_name):
         out_file.write(','.join(final_coverage_s))
         out_file.write(','.join(final_coverage_nogap_s))
     out_file.close()
+
+def compare_blast_out(blast_output1, blast_output2):
+    '''
+    Compares two dataframes, returns the second dataframe with the rows which 
+    first column values (qseqid) are absent in the first column of the first dataframe
+
+    Input:
+        blast_output1 - str - path to file with the first dataframe
+        blast_output2 - str - path to file with the second dataframe
+
+    Output:
+        blast_output2df - pandas dataframe - blast_output2 with rows which first columns
+        are absent in blast_output1 dataframe
+    '''
+
+    blast_output1df = pd.read_csv(blast_output1, sep='\t', header = None, \
+                                names=['qseqid','sseqid','pident','length','mismatch',\
+                                'gapopen','qstart','qend','sstart','send','evalue','bitscore'])
+    blast_output2df = pd.read_csv(blast_output2, sep='\t', header = None, \
+                                names=['qseqid','sseqid','pident','length','mismatch',\
+                                'gapopen','qstart','qend','sstart','send','evalue','bitscore'])
+
+    #get the rows of blast_table2 which query names absent in blast_table1
+    blast_output2df = blast_output2df[:][blast_output2df['qseqid'].isin(blast_output1df['qseqid']) != True]
+
+    return blast_output2df #.transpose()
+
+
+def make_pos_list(record_seq):
+    '''
+    Creates a list with length equal to reference alignment length
+    for sequence record_seq. Values in positions of alignment where record_seq
+    contains gap are zeros. Other values correspond to position of nucleotide in
+    record_seq.
+    Input:
+        record_seq - str - nucleotide sequences from alignment
+    Output:
+        pos_list - list - list looks like like [0,0,1,2,0,0,3,4,5], 
+    where zero-elements correspond to positions with gaps, and the other
+    elements are serial numbers of nucleotides0
+    '''
+    pos_list = []
+    k=1
+    for i in range(len(record_seq)):
+        if record_seq[i] != '-':
+            pos_list.append(k)
+            k+=1
+        else:
+            pos_list.append(0)
+    return pos_list
+
+def make_cov_list(blast_out_df, reference_length):
+    '''
+    Creates list with coverage of each sequence position for one blast output table
+    
+    Input:
+        record_seq - str - nucleotide sequence
+        reference_length - int - length of reference sequence blast was run against
+    Output:
+        pos_coverage - list - list with coverage values for each position in the sequence
+        blast was run against.
+    '''
+
+    #ID of reference seq blast was performed against
+    ref_id = blast_out_df['sseqid'][list(blast_out_df.index)[0]]
+
+    # list for sequence counts in each position of reference sequence
+    pos_coverage = [0]*reference_length
+
+    # adds counts to pos_coverage list according to blast hits in blast_output
+
+    def add_cov(row):
+        for i in range(row["sstart"]-1, row["send"], 1):
+            #pos_coverage[rel_pos_list.index(i)] +=1
+            pos_coverage[i] +=1
+
+    blast_out_df.apply(add_cov, axis=1)
+
+    return pos_coverage
+
 
 
 if __name__ == "__main__":

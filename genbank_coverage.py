@@ -1,27 +1,58 @@
 import argparse
+import matplotlib.pyplot as plt
 import os
 import subprocess
 import sys
 import pandas as pd
 from Bio import Entrez
 from Bio import SeqIO
-import matplotlib.pyplot as plt
+from pathlib import Path
 
-# performs standalone blast of sequences from input_file against reference sequence
-# check whether sequence from input_file overlaps with region [rstart,rend] in reference sequences
-#
-# input_file - name of file with sequence alignment, fasta format
-# reference - name of file with reference, fasta format
-# output_dir - output directory to save fasta file with sequences that overlap with target region
+
+def fetch_from_GB(query):
+    '''
+    Downloads sequences found using query from GenBank
+    Writes them to file in fasta-format
+    Input:
+        query - str - query for search in GenBank
+    Output:
+        f_name - str - name of ouput file with sequences in fasta-format
+    '''
+    Entrez.email = "vjulia94@gmail.com"
+    # list with ids obtained by query
+    id_list = Entrez.read(Entrez.esearch(db="nucleotide", term=query, idtype="acc"))['IdList']
+
+    # output file with sequences will be saved in current working dir
+    f_name = Path(os.getcwd(),"file.fasta")
+
+    file_out = open(f_name, 'w')
+    # Saving sequences 
+    i = 0
+    # fetch each sequence from GenBank by its ID and writes to ouput file
+    for id in id_list:
+        i+=1
+        if i % 1000 ==0:
+            print("Downloaded {} sequences".format(i))
+        handle = Entrez.efetch(db="nucleotide", id=id, rettype="fasta", retmode="text")
+        for line in handle:
+            file_out.write(line)
+        handle.close()
+    file_out.close()
+    return(f_name)
 
 def find_coverage(input_file, reference, path_to_blast):
+    '''
+    Performs standalone blast of sequences from input_file against reference sequence
+    Check whether sequence from input_file overlaps with reference sequence
+    Input:
+        input_file - name of file with sequences in fasta format
+        reference - name of file with reference sequence, fasta format
+        output_dir - output directory to save fasta file with sequences that overlap with reference
+    Output:
+        pos_coverage - list - list with coverage counts in each position of reference sequence
 
-    if sys.platform == 'win32' or sys.platform == 'cygwin':
-        input_file = '\\'.join(input_file.split('/'))
-    #    output_dir = '\\'.join(input_file.split('\\')[:-1])+'\\' # output directory
-    #else:
-    #    output_dir = '/'.join(input_file.split('/')[:-1])+'/' # output directory
-    output_dir = os.path.split(input_file)[0] + '/'
+    '''
+    output_dir = os.path.split(input_file)[0]
     # sequence objects from input file
     records = list(SeqIO.parse(input_file, "fasta"))
 
@@ -32,16 +63,22 @@ def find_coverage(input_file, reference, path_to_blast):
     for rec in records:
         seq_ordered.append(rec.id)
 
+    # name of output blast file
+    blast_table = Path(output_dir, "blast_" + ref_id + ".out")
+    # name of local database
+    local_db = Path(output_dir, "local_db_"+ref_id)
+
     if sys.platform == 'win32' or sys.platform == 'cygwin':
-        makeblast_command = "{}makeblastdb.exe -in {} -dbtype nucl -out {}local_db{}".format(path_to_blast, reference, output_dir,ref_id)
-        blastn_command = "{blast_path}blastn.exe -db {out_path}local_db{ref} -query {input} -outfmt 6 -out \
-                            {out_path}blast_{ref}.out -strand plus -evalue 1e-20 -word_size 7".format(blast_path = path_to_blast, \
-                            input = input_file, out_path = output_dir, ref=ref_id)
+        makeblast_command = "{}makeblastdb.exe -in {} -dbtype nucl -out {}".format(path_to_blast,\
+           reference, local_db)
+        blastn_command = "{blast_path}blastn.exe -db {db} -query {input} -outfmt 6 -out {out_blast} \
+                             -strand plus -evalue 1e-20 -word_size 7".format(blast_path = path_to_blast, \
+                            input = input_file, db = local_db, out_blast = blast_table)
     else:
-        makeblast_command = '{}makeblastdb -in {} -dbtype nucl -out {}local_db{}'.format(path_to_blast, reference, output_dir,ref_id)
-        blastn_command = '{blast_path}blastn -db {out_path}local_db{ref} -query {input} -outfmt 6 -out \
-                            {out_path}blast_{ref}.out -strand plus -evalue 1e-20 -word_size 7'.format(blast_path = path_to_blast, \
-                            input = input_file, out_path = output_dir, ref=ref_id)
+        makeblast_command = '{}makeblastdb -in {} -dbtype nucl -out {}'.format(path_to_blast, reference, local_db)
+        blastn_command = '{blast_path}blastn -db {db} -query {input} -outfmt 6 -out \
+                            {out_blast} -strand plus -evalue 1e-20 -word_size 7'.format(blast_path = path_to_blast, \
+                            input = input_file, db = local_db,  out_blast = blast_table)
 
 
     #creating local database using reference sequence
@@ -49,8 +86,8 @@ def find_coverage(input_file, reference, path_to_blast):
 
     #blast against reference sequences
     subprocess.call(blastn_command, shell=True)
-    print("{out_path}blast_{ref}.out".format(out_path = output_dir, ref=ref_id))
-    blast_table = "{out_path}blast_{ref}.out".format(out_path = output_dir, ref=ref_id)
+    print(output_blast)
+
 
     #dataframe with blast results
     blast_out_df = pd.read_csv(blast_table, sep='\t', header = None, \
@@ -81,8 +118,6 @@ def find_coverage(input_file, reference, path_to_blast):
 
 #reference = 'D:/MY_FILES/DATA/Lukashev/Astroviruses/reference_strains/HAstV-1_ref_complete.fasta'
 #input_file = 'D:/MY_FILES/DATA/Lukashev/Astroviruses/MAstV-1/HAstV-1/Ann/HAst-1_allgb_wref.fasta'
-#output_dir = '/'.join(input_file.split('/')[:-1])+'/'
-
 
 
 if __name__ == "__main__":
@@ -103,7 +138,9 @@ if __name__ == "__main__":
         Please, use genbank_coverage.py --help")
     else:
         if os.path.exists(args.input_file):
+            out_directory = os.path.split(args.input_file)[0]
             file_ext = os.path.splitext(args.input_file)[1]
+            # converts genbank to fasta
             if file_ext == ".gb" or file_ext == ".genbank":
                 with open(args.input_file) as input_handle:
                     input_f_name = os.path.splitext(args.input_file)[0]+".fasta"
@@ -114,15 +151,20 @@ if __name__ == "__main__":
                 output_handle.close()
                 args.input_file = input_f_name
         else:
+            out_directory = os.getcwd()
+            # downloades sequences from GenBank and saves them to fasta_file
             args.input_file = fetch_from_GB(args.query)
 
+        # searches reference sequence in file with sequences downloaded from GenBank
         if not os.path.exists(args.reference):
             ref_seq = SeqIO.to_dict(SeqIO.parse(args.input_file, "fasta"))[args.reference]
-            print(os.path.split(os.getcwd()))
-            ref_f_name = os.path.join(os.getcwd(),args.reference+'.fasta')
+            
+            ref_f_name = os.path.join(out_directory,args.reference+'.fasta')
             SeqIO.write(ref_seq, ref_f_name, "fasta")
             args.reference = ref_f_name
 
+        #founds coverage of reference sequence by sequences downloaded from GenBank
+        # list with 
         pos_coverage = find_coverage(args.input_file, args.reference, args.path_blast)
 
         fout_cov = open(os.path.splitext(args.input_file)[0]+"_cov.txt", "w")
@@ -130,24 +172,6 @@ if __name__ == "__main__":
         fout_cov.close()
 
 
-def fetch_from_GB(query):
-    Entrez.email = "vjulia94@gmail.com"
-    # list with ids obtained by query
-    id_list = Entrez.read(Entrez.esearch(db="nucleotide", term=query, idtype="acc"))['IdList']
-    if sys.platform == 'win32' or sys.platform == 'cygwin':
-        f_name = os.getcwd()+"\\file.fasta"
-    else:
-        f_name = os.getcwd()+"/file.fasta"
-    gb_file = open(f_name, 'w')
-    i = 0
-    for id in id_list:
-        i+=1
-        if i % 1000 ==0:
-            print("Downloaded {} sequences".format(i))
-        handle = Entrez.efetch(db="nucleotide", id=id, rettype="fasta", retmode="text")
-        for line in handle:
-            gb_file.write(line)
-        handle.close()
-    gb_file.close()
-    return(f_name)
+
+
 
