@@ -98,6 +98,7 @@ def find_coverage(input_file, reference, path_to_blast):
     reference_length = len(list(SeqIO.parse(reference, "fasta"))[0].seq) 
     print(list(SeqIO.parse(reference, "fasta"))[0])
     #list for sequence counts in each position
+    global pos_coverage
     pos_coverage = [0]*reference_length
 
     def add_cov(row):

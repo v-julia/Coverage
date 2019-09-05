@@ -27,39 +27,21 @@ def merges_coverage(input_dir, out_dir, path_alignment, title, first_name):
     #input_dir = os.getcwd()
     blast_outputs_names = os.listdir(input_dir)
 
-    # dictionary for complete first blast output dataframe and the other dataframes
-    # with rows absent in the first dataframes
+    # dictionary for  blast output dataframes
+
     blast_out_dict = {}
-
-    # reading the first df
-    blast_out_dict[first_name] = pd.read_csv(Path(input_dir,first_name), sep='\t', header = None, \
-                                    names=['qseqid','sseqid','pident','length','mismatch',\
-                                    'gapopen','qstart','qend','sstart','send','evalue','bitscore']) #.transpose()
-
 
     # getting the other blast output dataframes with the rows distinct from the first df
     for name in blast_outputs_names:
-        if name == first_name:
-            continue
-        else:
-            print(name)
-            blast_out_dict[name] = pd.read_csv(Path(input_dir,name), sep='\t', header = None, \
-                                    names=['qseqid','sseqid','pident','length','mismatch',\
-                                    'gapopen','qstart','qend','sstart','send','evalue','bitscore']) #.transpose()
-            #blast_out_dict[name] = compare_blast_out(Path(input_dir,first_name),Path(input_dir,name))
-            print(len(blast_out_dict[name]))
+        blast_out_dict[name] = pd.read_csv(Path(input_dir,name), sep='\t', header = None, \
+                                names=['qseqid','sseqid','pident','length','mismatch',\
+                                'gapopen','qstart','qend','sstart','send','evalue','bitscore']) #.transpose()
+        #blast_out_dict[name] = compare_blast_out(Path(input_dir,first_name),Path(input_dir,name))
+        print(len(blast_out_dict[name]))
     # print(blast_out_dict["blast_AY593810.1.out"])
 
 
-    # alignment of reference sequences
-    records_temp = SeqIO.to_dict(SeqIO.parse(open(path_alignment), "fasta"))
 
-
-
-
-    # list with positions of sequence's nucleotides in alignment 
-    # of reference sequences
-    global rel_pos_list
 
     # list with ids of all blast hits from all files
     seq_ids_all = []
@@ -67,18 +49,6 @@ def merges_coverage(input_dir, out_dir, path_alignment, title, first_name):
     # Adds new columns to each dataframe - 'sstart_al' and 'send_al'
     # with positions in sseq according to the alignment of all reference sequence
     for name in blast_outputs_names:
-        '''
-        # sequence blast was run against
-        seq = str(records_temp[name.strip(".out").strip("blast_")].seq)
-        # length of sequence without gaps
-        seq_ng_length = len(seq.replace('-',''))
-
-        rel_pos_list = make_pos_list(seq)
-
-        blast_out_dict[name]['sstart_al'] = blast_out_dict[name].apply(get_sstart_pos_in_al, axis=1)
-        blast_out_dict[name]['send_al'] = blast_out_dict[name].apply(get_send_pos_in_al, axis=1)
-        print(blast_out_dict[name].head())
-        '''
         # adds all qseqid ids to list
         [seq_ids_all.append(id) for id in list(blast_out_dict[name]['qseqid'])]
 
@@ -126,37 +96,20 @@ def merges_coverage(input_dir, out_dir, path_alignment, title, first_name):
     t1 = time()
 
     blast_table_new = pd.DataFrame(columns = blast_out_dict[first_name].columns)
-    for x in length_df:
-        blast_table_new = blast_table_new.append(blast_out_dict[x][blast_out_dict[x]['qseqid']==length_df[length_df==x].index[0]],  ignore_index=True)
-    print(blast_table_new)
-    '''
-    def choose_table(x):
-        seq_id = length_df[length_df==x].index[0]
-        series = blast_out_dict[x][blast_out_dict[x]['qseqid']==seq_id]
-        return series
+    for i in range(len(length_df)):
+        seq_id = length_df.index[i]
+        table = blast_out_dict[length_df[i]]
+        blast_table_new = blast_table_new.append(table[table['qseqid']==seq_id], ignore_index=True)
 
-    #blast_table_new = length_df.apply(lambda x: blast_out_dict[x][blast_out_dict[x]['qseqid']==length_df[length_df==x].index[0]])
-    blast_table_new = length_df.apply(choose_table)
     print(blast_table_new)
-    t2 = time()
-    print(t2-t1)
-    t1 = time()
-    blast_table_new1 = [blast_out_dict[x][blast_out_dict[x]['qseqid']==length_df[length_df==x].index[0]] for x in length_df]
-    t2 = time()
-    print(t2-t1)
-    print(blast_table_new1)
-    #print(blast_table_new.shape())
-    #print(blast_table_new1.shape())
+    
+    # alignment of reference sequences
+    records_temp = SeqIO.to_dict(SeqIO.parse(open(path_alignment), "fasta"))
 
-    t2 = time()
-    print(t2-t1)
-    print(blast_table_new.head())
-    # sorted by sseqid
-    blast_table_new = blast_table_new.sort_values(by='sseqid')
-    '''
     # dictionary with lists of relative positions of ref sequences in the alignment
+    global rel_pos_l_dict
     rel_pos_l_dict = {}
-    print(blast_outputs_names)
+
     for name in blast_outputs_names:
         # sequence blast was run against
         seq_name = name.strip(".out").strip("blast_")
@@ -190,15 +143,7 @@ def merges_coverage(input_dir, out_dir, path_alignment, title, first_name):
     plt.savefig(out_dir+title+".svg")
     plt.show()
     plt.clf()
-    '''
-    plt.hist(range(1,len(final_coverage_nogap)+1,1), bins= range(1,len(final_coverage_nogap)+1,1), weights = final_coverage_nogap)
-    plt.xlabel("Position in genome, nt")
-    plt.ylabel("Number of sequences in GenBank")
-    plt.xlim(0,len(final_coverage_nogap))
-    plt.savefig(out_dir+title+"_nogap.png")
-    plt.savefig(out_dir+title+"_nogap.svg")
-    #plt.show()
-    '''
+
     final_coverage_s = [str(x) for x in final_coverage]
     #final_coverage_nogap_s = [str(x) for x in final_coverage_nogap]
     with open(os.path.join(out_dir, title+"_cov.txt"),"w") as out_file:
@@ -267,7 +212,6 @@ def make_cov_list(blast_out_df, reference_length):
         pos_coverage - list - list with coverage values for each position in the sequence
         blast was run against.
     '''
-
 
     # list for sequence counts in each position of reference sequence
     pos_coverage = [0]*reference_length
