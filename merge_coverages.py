@@ -93,8 +93,10 @@ def merges_coverage(input_dir, out_dir, path_alignment, title, first_name):
     length_dict = {}
     t1 = time()
     for seq_id in seq_ids_all:
+        
         length_dict[seq_id] = {}
         for name, df in blast_out_dict.items():
+
             length_dict[seq_id][name] = sum(df[df['qseqid'] == seq_id]['length'])
 
     # dataframe
@@ -106,17 +108,52 @@ def merges_coverage(input_dir, out_dir, path_alignment, title, first_name):
     print(t2-t1)
     print(length_df.head())
 
+    t1 = time()
     # series where value is the name of blast ouput table where length of vlast hit is maximal
     # if there are two tables with maximal length the first one is chosen
+
+    def max_length(col):
+        return col[col==max(col)].index[0]
+
     length_df = length_df.apply(lambda col: col[col==max(col)].index[0], axis=0)
-    print(length_df.head())
+    #length_df = length_df.apply(max_length, axis=0)
+    #length_df.to_csv(Path(input_dir,'lengths.txt'))
+    t2 = time()
+    print(t2-t1)
+    print(length_df)
     # new table with results from several blast runs
     # for each sequence has string from the blast table where query length was the highest
-    blast_table_new = length_df.apply(lambda x: blast_out_dict[str(x[0])][blast_out_dict[str(x[0])]==x.name],axis=0)
+    t1 = time()
+
+    blast_table_new = pd.DataFrame(columns = blast_out_dict[first_name].columns)
+    for x in length_df:
+        blast_table_new = blast_table_new.append(blast_out_dict[x][blast_out_dict[x]['qseqid']==length_df[length_df==x].index[0]],  ignore_index=True)
+    print(blast_table_new)
+    '''
+    def choose_table(x):
+        seq_id = length_df[length_df==x].index[0]
+        series = blast_out_dict[x][blast_out_dict[x]['qseqid']==seq_id]
+        return series
+
+    #blast_table_new = length_df.apply(lambda x: blast_out_dict[x][blast_out_dict[x]['qseqid']==length_df[length_df==x].index[0]])
+    blast_table_new = length_df.apply(choose_table)
+    print(blast_table_new)
+    t2 = time()
+    print(t2-t1)
+    t1 = time()
+    blast_table_new1 = [blast_out_dict[x][blast_out_dict[x]['qseqid']==length_df[length_df==x].index[0]] for x in length_df]
+    t2 = time()
+    print(t2-t1)
+    print(blast_table_new1)
+    #print(blast_table_new.shape())
+    #print(blast_table_new1.shape())
+
+    t2 = time()
+    print(t2-t1)
     print(blast_table_new.head())
     # sorted by sseqid
     blast_table_new = blast_table_new.sort_values(by='sseqid')
-
+    '''
     # dictionary with lists of relative positions of ref sequences in the alignment
     rel_pos_l_dict = {}
     print(blast_outputs_names)
@@ -133,16 +170,16 @@ def merges_coverage(input_dir, out_dir, path_alignment, title, first_name):
     def get_send_pos_in_al(row):
         r = rel_pos_l_dict[row['sseqid']].index(row['send'])
         return rel_pos_l_dict[row['sseqid']].index(row['send'])
-    blast_table_new['sstart_al'].apply(get_sstart_pos_in_al, axis=0)
-    blast_table_new['send_al'].apply(get_send_pos_in_al, axis=0)
+    blast_table_new['sstart_al'] = blast_table_new.apply(get_sstart_pos_in_al, axis=1)
+    blast_table_new['send_al'] = blast_table_new.apply(get_send_pos_in_al, axis=1)
 
     print(blast_table_new.head())
-
+    blast_table_new.to_csv(Path(out_dir,'blast_new.txt'))
 
 
     reference_length = len(records_temp[list(records_temp)[0]].seq)
 
-    final_coverage = make_cov_list(blast_out_dict[proto_id], reference_length)
+    final_coverage = make_cov_list(blast_table_new, reference_length)
 
     #plt.hist(range(1,len(final_coverage_nogap)+1,1), bins= range(1,len(final_coverage_nogap)+1,1), weights = final_coverage_nogap)
     plt.hist(range(1,len(final_coverage)+1,1), bins= range(1,len(final_coverage)+1,1), weights = final_coverage)
@@ -238,7 +275,7 @@ def make_cov_list(blast_out_df, reference_length):
     # adds counts to pos_coverage list according to blast hits in blast_output
 
     def add_cov(row):
-        for i in range(row["sstart"]-1, row["send"], 1):
+        for i in range(row["sstart_al"]-1, row["send_al"], 1):
             #pos_coverage[rel_pos_list.index(i)] +=1
             pos_coverage[i] +=1
 

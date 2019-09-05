@@ -12,7 +12,7 @@
     <Name>genbank_coverage</Name>
     <RootNamespace>genbank_coverage</RootNamespace>
     <LaunchProvider>Standard Python launcher</LaunchProvider>
-    <CommandLineArguments>-i D:\DATA\samplebias\biases\ParechoA_coverage\out_blast\ -o D:\DATA\samplebias\biases\ParechoA_coverage\ -a D:\DATA\samplebias\biases\ParechoA_coverage\ParechoA_proto_aln.fasta -t ParechoA -f blast_AF055846.1.out</CommandLineArguments>
+    <CommandLineArguments>-i D:\MY_FILES\DATA\Lukashev\Enteroviruses\sample_bias\ParechoA_coverage\out_blast\ -o D:\MY_FILES\DATA\Lukashev\Enteroviruses\sample_bias\ParechoA_coverage\ -a D:\MY_FILES\DATA\Lukashev\Enteroviruses\sample_bias\ParechoA_coverage\ParechoA_proto_aln.fasta -t ParechoA -f blast_AF055846.1.out</CommandLineArguments>
     <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
     <IsWindowsApplication>False</IsWindowsApplication>
   </PropertyGroup>
