@@ -12,16 +12,16 @@ from Bio import SeqIO
 
 t2 = time()
 
-print(t2-t1)
+print('time for loading libraries {}'.format(round(t2-t1,4)))
 
-def merges_coverage(input_dir, out_dir, path_alignment, title, first_name):
+def merges_coverage(input_dir, out_dir, path_alignment, title):
     '''
     Input:
         input_dir - str - directory with blast results
         out_dir - str - directory to save output files
         path_alignment - str - path to the alignment of sequences which were
                         used as references for blast searches
-        title - 
+        title - title for coverage plot
     '''
 
     #input_dir = os.getcwd()
@@ -36,12 +36,7 @@ def merges_coverage(input_dir, out_dir, path_alignment, title, first_name):
         blast_out_dict[name] = pd.read_csv(Path(input_dir,name), sep='\t', header = None, \
                                 names=['qseqid','sseqid','pident','length','mismatch',\
                                 'gapopen','qstart','qend','sstart','send','evalue','bitscore']) #.transpose()
-        #blast_out_dict[name] = compare_blast_out(Path(input_dir,first_name),Path(input_dir,name))
-        print(len(blast_out_dict[name]))
-    # print(blast_out_dict["blast_AY593810.1.out"])
-
-
-
+        print(name,len(blast_out_dict[name]))
 
     # list with ids of all blast hits from all files
     seq_ids_all = []
@@ -75,7 +70,7 @@ def merges_coverage(input_dir, out_dir, path_alignment, title, first_name):
     # values - length of blast hit seq_id in blast output table
     length_df = pd.DataFrame.from_dict(length_dict)
     t2 = time()
-    print(t2-t1)
+    print('Time for creating tables with length {}'.format(round(t2-t1,4)))
     print(length_df.head())
 
     t1 = time()
@@ -89,13 +84,13 @@ def merges_coverage(input_dir, out_dir, path_alignment, title, first_name):
     #length_df = length_df.apply(max_length, axis=0)
     #length_df.to_csv(Path(input_dir,'lengths.txt'))
     t2 = time()
-    print(t2-t1)
+    print('Print for creating Series with tables\' names {}'.format(round(t2-t1,4)))
     print(length_df)
     # new table with results from several blast runs
     # for each sequence has string from the blast table where query length was the highest
     t1 = time()
 
-    blast_table_new = pd.DataFrame(columns = blast_out_dict[first_name].columns)
+    blast_table_new = pd.DataFrame(columns = blast_out_dict[name].columns)
     for i in range(len(length_df)):
         seq_id = length_df.index[i]
         table = blast_out_dict[length_df[i]]
@@ -239,8 +234,6 @@ if __name__ == "__main__":
                         help="Path to file with alignment of reference sequences", required=True)
     parser.add_argument("-t", "--title", type=str,
                         help="Title of output file figure", required=True)
-    parser.add_argument("-f", "--first", type=str,
-                        help="The first blast output file", required=True)
     args = parser.parse_args()
 
-    pos_coverage = merges_coverage(args.input_dir, args.output_dir, args.alignment, args.title, args.first)
+    pos_coverage = merges_coverage(args.input_dir, args.output_dir, args.alignment, args.title)

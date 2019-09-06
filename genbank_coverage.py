@@ -63,10 +63,17 @@ def find_coverage(input_file, reference, path_to_blast):
     for rec in records:
         seq_ordered.append(rec.id)
 
+    if not os.path.exists(Path(output_dir, "blast_out")):
+        try:
+            print(Path(output_dir, "blast_out"))
+            os.system('mkdir ' + str(Path(output_dir, "blast_out")))
+        except:
+            print('Can\'t create output folder')
+
     # name of output blast file
-    blast_table = Path(output_dir, "blast_" + ref_id + ".out")
+    blast_table = str(Path(output_dir, "blast_out", "blast_" + ref_id + ".out"))
     # name of local database
-    local_db = Path(output_dir, "local_db_"+ref_id)
+    local_db = str(Path(output_dir, "local_db_"+ref_id))
 
     if sys.platform == 'win32' or sys.platform == 'cygwin':
         makeblast_command = "{}makeblastdb.exe -in {} -dbtype nucl -out {}".format(path_to_blast,\
@@ -86,7 +93,7 @@ def find_coverage(input_file, reference, path_to_blast):
 
     #blast against reference sequences
     subprocess.call(blastn_command, shell=True)
-    print(output_blast)
+    print(blast_table)
 
 
     #dataframe with blast results
@@ -110,9 +117,10 @@ def find_coverage(input_file, reference, path_to_blast):
     plt.xlabel("Position in genome, nt")
     plt.ylabel("Number of sequences in GenBank")
     plt.xlim(0,len(pos_coverage))
-    plt.savefig(os.path.splitext(args.input_file)[0]+"_"+ref_id+"_cov.svg")
-    plt.savefig(os.path.splitext(args.input_file)[0]+"_"+ref_id+"cov_.png")
-    plt.show()
+    plt.savefig(os.path.splitext(input_file)[0]+"_"+ref_id+"_cov.svg")
+    plt.savefig(os.path.splitext(input_file)[0]+"_"+ref_id+"cov_.png")
+    plt.clf()
+#    plt.show()
     return pos_coverage
 
 #path_to_blast = 'C:/Program Files/NCBI/blast-2.9.0+/bin'
@@ -158,17 +166,19 @@ if __name__ == "__main__":
 
         # searches reference sequence in file with sequences downloaded from GenBank
         if not os.path.exists(args.reference):
-            ref_seq = SeqIO.to_dict(SeqIO.parse(args.input_file, "fasta"))[args.reference]
-            
-            ref_f_name = os.path.join(out_directory,args.reference+'.fasta')
-            SeqIO.write(ref_seq, ref_f_name, "fasta")
+            records = SeqIO.to_dict(SeqIO.parse(args.input_file, "fasta"))
+            if args.reference in records.keys():
+                ref_seq = records[args.reference]
+                ref_f_name = os.path.join(out_directory,args.reference+'.fasta')
+                SeqIO.write(ref_seq, ref_f_name, "fasta")
+            else:
+                ref_f_name = fetch_from_GB(args.reference)
             args.reference = ref_f_name
-
-        #founds coverage of reference sequence by sequences downloaded from GenBank
-        # list with 
+        #finds coverage of reference sequence by sequences downloaded from GenBank
+        # returns list with sequence counts for each position in sequence
         pos_coverage = find_coverage(args.input_file, args.reference, args.path_blast)
 
-        fout_cov = open(os.path.splitext(args.input_file)[0]+"_cov.txt", "w")
+        fout_cov = open(os.path.splitext(args.input_file)[0]+"_"+args.reference.strip('fasta')+"_cov.txt", "w")
         fout_cov.write(",".join(str(x) for x in pos_coverage))
         fout_cov.close()
 
