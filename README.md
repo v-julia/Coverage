@@ -1,6 +1,5 @@
 # Coverage
-This folder contains python scripts that calculate the distribution of sequences in GenBank along the reference sequence
-
+This folder contains python scripts that calculate coverage of reference nucleotide sequence by some set of sequences. 
 
 ## genbank_coverage.py
 
