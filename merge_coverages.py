@@ -1,27 +1,30 @@
 from time import time
-
-t1 = time()
 import argparse
 import matplotlib.pyplot as plt
 import numpy as np
 import os
 import pandas as pd
 from pathlib import Path
-
 from Bio import SeqIO
+from genbank_coverage import make_cov_list, plot_cov
 
-t2 = time()
 
-print('time for loading libraries {}'.format(round(t2-t1,4)))
 
 def merges_coverage(input_dir, out_dir, path_alignment, title):
     '''
+    Reads files with blast results for different reference sequences from input_dir,
+    for each query sequence finds the blast table with maximal hit length,
+    merges strings with maximal hit lengths from different blast tables, 
+    calculates final coverage, draws a coverage plot, saves coverage values to output dir.
+    
     Input:
         input_dir - str - directory with blast results
         out_dir - str - directory to save output files
         path_alignment - str - path to the alignment of sequences which were
                         used as references for blast searches
         title - title for coverage plot
+    Output
+        Plots coverage and saves file with coverage values in output directory
     '''
 
     #input_dir = os.getcwd()
@@ -43,14 +46,22 @@ def merges_coverage(input_dir, out_dir, path_alignment, title):
 
     # Adds new columns to each dataframe - 'sstart_al' and 'send_al'
     # with positions in sseq according to the alignment of all reference sequence
+    t1 = time()
     for name in blast_outputs_names:
         # adds all qseqid ids to list
         [seq_ids_all.append(id) for id in list(blast_out_dict[name]['qseqid'])]
-
+    t2 = time()
+    print('Retrieving ids from table {:.4}'.format(t2-t1))
     # unique ids in all files with blast output
+    t1 = time()
     seq_ids_all = np.unique((np.array(seq_ids_all)))
-    print(len(seq_ids_all))
+    t2 = time()
+    print('Finished. Time: {:.4}'.format(t2-t1))
+    
+    print('Unique ids {}'.format(len(seq_ids_all)))
 
+
+    print('Creating tabe with hit lengths')
     # dictionary with length of coverage for sequences from blast output
     # length_dict[seq_id][blast_out_name] = length
     # seq_id - qseq, blast_out_name - name of blast table,
@@ -61,7 +72,6 @@ def merges_coverage(input_dir, out_dir, path_alignment, title):
         
         length_dict[seq_id] = {}
         for name, df in blast_out_dict.items():
-
             length_dict[seq_id][name] = sum(df[df['qseqid'] == seq_id]['length'])
 
     # dataframe
@@ -70,7 +80,7 @@ def merges_coverage(input_dir, out_dir, path_alignment, title):
     # values - length of blast hit seq_id in blast output table
     length_df = pd.DataFrame.from_dict(length_dict)
     t2 = time()
-    print('Time for creating tables with length {}'.format(round(t2-t1,4)))
+    print('Finished. Time: {:.4}'.format(t2-t1))
     print(length_df.head())
 
     t1 = time()
@@ -80,22 +90,31 @@ def merges_coverage(input_dir, out_dir, path_alignment, title):
     def max_length(col):
         return col[col==max(col)].index[0]
 
-    length_df = length_df.apply(lambda col: col[col==max(col)].index[0], axis=0)
+    length_df1 = length_df.apply(lambda col: col[col==max(col)].index[0], axis=0)
     #length_df = length_df.apply(max_length, axis=0)
     #length_df.to_csv(Path(input_dir,'lengths.txt'))
     t2 = time()
-    print('Print for creating Series with tables\' names {}'.format(round(t2-t1,4)))
+    print('Time for lambda creating Series with tables\' names {:.4}'.format(t2-t1))
+
+    t1 = time()
+    length_df = length_df.apply(max_length, axis=0)
+    t2 = time()
+    print('Time for creating series with tables\' names {:.4} '.format(t2-t1))
+
     print(length_df)
+    
+    t1 = time()
     # new table with results from several blast runs
     # for each sequence has string from the blast table where query length was the highest
+    print("Merging dataframes")
     t1 = time()
-
     blast_table_new = pd.DataFrame(columns = blast_out_dict[name].columns)
     for i in range(len(length_df)):
         seq_id = length_df.index[i]
         table = blast_out_dict[length_df[i]]
         blast_table_new = blast_table_new.append(table[table['qseqid']==seq_id], ignore_index=True)
-
+    t2 = time()
+    print('Finished. Time: {:.4} '.format(t2-t1))
     print(blast_table_new)
     
     # alignment of reference sequences
@@ -105,21 +124,28 @@ def merges_coverage(input_dir, out_dir, path_alignment, title):
     global rel_pos_l_dict
     rel_pos_l_dict = {}
 
+    # calculating relative postitions of reference sequences
     for name in blast_outputs_names:
         # sequence blast was run against
         seq_name = name.strip(".out").strip("blast_")
         seq = str(records_temp[seq_name].seq)
         rel_pos_l_dict[seq_name] = make_pos_list(seq)
 
+    # calculates hit's start position in alignment of references
     def get_sstart_pos_in_al(row):
         r = rel_pos_l_dict[row['sseqid']].index(row['sstart'])
         return rel_pos_l_dict[row['sseqid']].index(row['sstart'])
-
+    # calculates hit's end position in alignment of references
     def get_send_pos_in_al(row):
         r = rel_pos_l_dict[row['sseqid']].index(row['send'])
         return rel_pos_l_dict[row['sseqid']].index(row['send'])
+
+    print("Adding the rows with new positions")
+    t1 = time()
     blast_table_new['sstart_al'] = blast_table_new.apply(get_sstart_pos_in_al, axis=1)
     blast_table_new['send_al'] = blast_table_new.apply(get_send_pos_in_al, axis=1)
+    t2 = time()
+    print("Finished. Time: {:.4}".format(t2-t1))
 
     print(blast_table_new.head())
     blast_table_new.to_csv(Path(out_dir,'blast_new.txt'))
@@ -127,8 +153,16 @@ def merges_coverage(input_dir, out_dir, path_alignment, title):
 
     reference_length = len(records_temp[list(records_temp)[0]].seq)
 
-    final_coverage = make_cov_list(blast_table_new, reference_length)
+    print('Making final coverage')
+    t1 = time()
+    final_coverage = make_cov_list(blast_table_new, reference_length, 1)
+    t2 = time()
+    print('Finished. TIme: {:.4}'.format(t2-t1))
+    plot_cov(final_coverage, out_dir, title+'_plot')
 
+    '''
+    print('Drawing final histogram')
+    t1 = time()
     #plt.hist(range(1,len(final_coverage_nogap)+1,1), bins= range(1,len(final_coverage_nogap)+1,1), weights = final_coverage_nogap)
     plt.hist(range(1,len(final_coverage)+1,1), bins= range(1,len(final_coverage)+1,1), weights = final_coverage)
     plt.xlabel("Position in genome, nt")
@@ -136,9 +170,12 @@ def merges_coverage(input_dir, out_dir, path_alignment, title):
     plt.xlim(0,len(final_coverage))
     plt.savefig(out_dir+title+".png")
     plt.savefig(out_dir+title+".svg")
+    t2= time()
+    print('Finished {}'.format(str(t2-t1)))
     plt.show()
     plt.clf()
-
+    '''
+    # saves coverage to a text file
     final_coverage_s = [str(x) for x in final_coverage]
     #final_coverage_nogap_s = [str(x) for x in final_coverage_nogap]
     with open(os.path.join(out_dir, title+"_cov.txt"),"w") as out_file:
@@ -146,6 +183,7 @@ def merges_coverage(input_dir, out_dir, path_alignment, title):
         #out_file.write(','.join(final_coverage_nogap_s))
     out_file.close()
 
+# This function is not used any more
 def compare_blast_out(blast_output1, blast_output2):
     '''
     Compares two dataframes, returns the second dataframe with the rows which 
@@ -180,11 +218,11 @@ def make_pos_list(record_seq):
     contains gap are zeros. Other values correspond to position of nucleotide in
     record_seq.
     Input:
-        record_seq - str - nucleotide sequences from alignment
+        record_seq - str - nucleotide sequence from alignment
     Output:
         pos_list - list - list looks like like [0,0,1,2,0,0,3,4,5], 
     where zero-elements correspond to positions with gaps, and the other
-    elements are serial numbers of nucleotides0
+    elements are serial numbers of nucleotides in record_seq
     '''
     pos_list = []
     k=1
@@ -196,31 +234,6 @@ def make_pos_list(record_seq):
             pos_list.append(0)
     return pos_list
 
-def make_cov_list(blast_out_df, reference_length):
-    '''
-    Creates list with coverage of each sequence position for one blast output table
-    
-    Input:
-        record_seq - str - nucleotide sequence
-        reference_length - int - length of reference sequence blast was run against
-    Output:
-        pos_coverage - list - list with coverage values for each position in the sequence
-        blast was run against.
-    '''
-
-    # list for sequence counts in each position of reference sequence
-    pos_coverage = [0]*reference_length
-
-    # adds counts to pos_coverage list according to blast hits in blast_output
-
-    def add_cov(row):
-        for i in range(row["sstart_al"]-1, row["send_al"], 1):
-            #pos_coverage[rel_pos_list.index(i)] +=1
-            pos_coverage[i] +=1
-
-    blast_out_df.apply(add_cov, axis=1)
-
-    return pos_coverage
 
 
 
@@ -236,4 +249,4 @@ if __name__ == "__main__":
                         help="Title of output file figure", required=True)
     args = parser.parse_args()
 
-    pos_coverage = merges_coverage(args.input_dir, args.output_dir, args.alignment, args.title)
+    merges_coverage(args.input_dir, args.output_dir, args.alignment, args.title)

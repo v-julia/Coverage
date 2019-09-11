@@ -12,7 +12,7 @@
     <Name>genbank_coverage</Name>
     <RootNamespace>genbank_coverage</RootNamespace>
     <LaunchProvider>Standard Python launcher</LaunchProvider>
-    <CommandLineArguments>-i D:\DATA\samplebias\biases\EV-A_coverage\trial\EV-A.fasta -ref 'U22521.1,AY421761.1,AY421760.1,AY421762.1,AY421763.1,AY421764.1,AY421765.1,AY421766.1,AY421767.1,AY421768.1,AY421769.1,U05876.1,AY697458.1,AY697459.1,AY697461.1,EF667344.1,LK021688.1' -t 'Enterovius' -path_blast D:\Programs\blast-2.9.0+\bin\ -path_mafft  D:\Programs\mafft-win\</CommandLineArguments>
+    <CommandLineArguments>-i D:\MY_FILES\DATA\Lukashev\Enteroviruses\sample_bias\ParechoA_coverage\ParechoA.fasta -ref 'AB084913.1,AB252582.1,AF055846.1' -t 'Parechovirus' -path_blast D:\MY_FILES\Programs\blast-2.6.0+\bin\ -path_mafft  D:\MY_FILES\DATA\Lukashev\scripts\mafft-win\</CommandLineArguments>
     <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
     <IsWindowsApplication>False</IsWindowsApplication>
   </PropertyGroup>

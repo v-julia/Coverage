@@ -5,6 +5,13 @@ from Bio import SeqIO
 from pathlib import Path
 from genbank_coverage import fetch_from_GB, find_coverage
 from merge_coverages import merges_coverage
+from time import time
+
+"""
+For each sequences in input_file (or sequences loaded from GenBank nucleotide using query) 
+performs standalone blast against reference sequences from reference, saves blast output table in 'blast_out' folder.
+Then merges results using merge_coverage.py. Draws a coverage plot and saves coverage values to the directory of input file.
+"""
 
 
 if __name__ == "__main__":
@@ -14,7 +21,8 @@ if __name__ == "__main__":
     parser.add_argument("-q", "--query", type=str,
                         help="Query for GenBank Nucleotide database")
     parser.add_argument("-ref", "--reference", type=str,
-                        help="List with reference sequences'ids separated by comma", required= True)
+                        help="List with reference sequences'ids (with version!) separated by comma. \
+                        Example: AB084913.1,AB0834732.2", required= True)
     parser.add_argument("-t", "--title", type=str,
                         help="Title for coverage plot", required= True)
     parser.add_argument("-path_blast", "--path_blast", type=str,
@@ -27,6 +35,7 @@ if __name__ == "__main__":
         print("File with sequences or query for Nucleotide database are not defined. \
         Please, use genbank_coverage.py --help")
     else:
+        # reads sequences from file if it exists
         if os.path.exists(args.input_file):
             out_directory = os.path.split(args.input_file)[0]
             file_ext = os.path.splitext(args.input_file)[1]
@@ -49,13 +58,15 @@ if __name__ == "__main__":
         ref_files_list = []
         # list to reference records
         ref_records_list = []
+        
         #list with reference ids
         args.reference = args.reference.strip('\'').split(",")
         args.reference = [x.strip() for x in args.reference]
 
 
         # searches reference sequence in file with sequences downloaded from GenBank
-        print("Checking the presence of reference sequence")
+        print("Checking the presence of reference sequences")
+        
         # all records loaded from GenBank
         records = SeqIO.to_dict(SeqIO.parse(args.input_file, "fasta"))
         for ref_seq_id in args.reference:
@@ -77,7 +88,9 @@ if __name__ == "__main__":
         # writes reference sequence to one file
         reference_file_n = str(Path(os.path.split(args.input_file)[0],"reference.fasta"))
         SeqIO.write(ref_records_list, reference_file_n, "fasta")
-
+        print("Finished. Reference sequences were saved in {}".format(reference_file_n))
+        
+        t0 = time()
         # aligns reference sequences
         print("Aligning reference sequences")
         reference_aln_file_n = str(Path(os.path.split(args.input_file)[0],"reference_aln.fasta"))
@@ -90,7 +103,7 @@ if __name__ == "__main__":
 
         print('Calculating coverage using reference sequences')
 
-        input_dir = os.path.splitext(args.input_file)[0]
+        input_dir = os.path.split(args.input_file)[0]
         for ref_seq_id, ref_seq_file in zip(args.reference,ref_files_list):
             # founds coverage of reference sequence by sequences downloaded from GenBank
             pos_coverage = find_coverage(args.input_file, ref_seq_file, args.path_blast)
@@ -99,7 +112,12 @@ if __name__ == "__main__":
             fout_cov.write(",".join(str(x) for x in pos_coverage))
             fout_cov.close()
 
-
         out_dir = str(Path(input_dir, "blast_out"))
         print('Merging blast results from different reference sequences')
+        t1 = time()
         merges_coverage(out_dir, input_dir, reference_aln_file_n, args.title)
+        t2 = time()
+        print("Finished merging {:.4}".format(t2-t1))
+
+        tn = time()
+        print('Total time {:.4}'.format(tn-t0))

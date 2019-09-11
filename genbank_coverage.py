@@ -4,9 +4,11 @@ import os
 import subprocess
 import sys
 import pandas as pd
+import numpy as np
 from Bio import Entrez
 from Bio import SeqIO
 from pathlib import Path
+from time import time
 
 
 def fetch_from_GB(query):
@@ -25,8 +27,11 @@ def fetch_from_GB(query):
     # output file with sequences will be saved in current working dir
     f_name = Path(os.getcwd(),"file.fasta")
 
+    # output file wuth sequences in fasta format
     file_out = open(f_name, 'w')
+    
     # Saving sequences 
+    
     i = 0
     # fetch each sequence from GenBank by its ID and writes to ouput file
     for id in id_list:
@@ -38,31 +43,85 @@ def fetch_from_GB(query):
             file_out.write(line)
         handle.close()
     file_out.close()
+    print('Finished')
     return(f_name)
+
+def make_cov_list(blast_out_df, reference_length, merged=0):
+    '''
+    Creates list with coverage of each sequence position for one blast output table
+    
+    Input:
+        blast_out_df - pandas dataframe - dataframe with blast results
+        reference_length - int - length of reference sequence blast was run against
+        merged -  int - 1 for making coverage from merged blast outputs, 0 for single blast output table
+    Output:
+        pos_coverage - list - list with coverage values for each position in the sequence
+        blast was run against.
+    '''
+
+    # list for sequence counts in each position of reference sequence
+    pos_coverage = [0]*reference_length
+
+    # adds counts to pos_coverage list according to blast hits in blast_output
+    if merged == 0:
+        def add_cov(row):
+            for i in range(row["sstart"]-1, row["send"], 1):
+                #pos_coverage[rel_pos_list.index(i)] +=1
+                pos_coverage[i] +=1
+    else:
+        def add_cov(row):
+            for i in range(row["sstart_al"]-1, row["send_al"], 1):
+                #pos_coverage[rel_pos_list.index(i)] +=1
+                pos_coverage[i] +=1
+
+    blast_out_df.apply(add_cov, axis=1)
+
+    return pos_coverage
+
+def plot_cov(pos_cov_list, out_dir, title):
+    '''
+    Plots coverage of reference sequence
+    Input:
+        pos_cov_list - list - list with coverage count for each position in
+                                reference seq
+        out_dir - str - path to output directory
+        title - str - title of plot
+    Output:
+        saves coberage plot in .png and .svg formats in output directory
+    '''
+    #plt.hist(range(1,len(pos_coverage)+1,1), bins= range(1,len(pos_coverage)+1,1), weights = pos_coverage)
+    plt.plot(pos_cov_list)
+    plt.xlabel("Position in genome, nt")
+    plt.ylabel("Number of sequences in GenBank")
+    plt.xlim(0,len(pos_cov_list))
+    plt.savefig(str(Path(out_dir, title + "_cov.svg")))
+    print("Output figure saved as {}".format(str(Path(out_dir, title + "_cov.svg"))))
+    plt.savefig(str(Path(out_dir, title + "_cov.png")))
+    plt.clf()
+
 
 def find_coverage(input_file, reference, path_to_blast):
     '''
-    Performs standalone blast of sequences from input_file against reference sequence
-    Check whether sequence from input_file overlaps with reference sequence
+    Performs standalone blast of sequences from input_file against reference sequence,
+    saves blast output table in 'blast_out' folder.
+    Checks whether sequence from input_file overlaps with reference sequence, 
+    calculates coverage for each position of reference, plots coverage.
+    
     Input:
         input_file - name of file with sequences in fasta format
         reference - name of file with reference sequence, fasta format
         output_dir - output directory to save fasta file with sequences that overlap with reference
     Output:
         pos_coverage - list - list with coverage counts in each position of reference sequence
-
     '''
+    
+    # path to ouput dorectory
     output_dir = os.path.split(input_file)[0]
-    # sequence objects from input file
-    records = list(SeqIO.parse(input_file, "fasta"))
 
     # id of reference sequence
     ref_id = os.path.splitext(os.path.split(reference)[1])[0]
 
-    seq_ordered = [] # copy of records
-    for rec in records:
-        seq_ordered.append(rec.id)
-
+    # creates "blast_out" directory if it doesn't exist
     if not os.path.exists(Path(output_dir, "blast_out")):
         try:
             print(Path(output_dir, "blast_out"))
@@ -88,13 +147,16 @@ def find_coverage(input_file, reference, path_to_blast):
                             input = input_file, db = local_db,  out_blast = blast_table)
 
 
+    print("Performing blast search")
+
     #creating local database using reference sequence
     subprocess.call(makeblast_command, shell=True)
 
     #blast against reference sequences
     subprocess.call(blastn_command, shell=True)
-    print(blast_table)
+    #print(blast_table)
 
+    print('Finished')
 
     #dataframe with blast results
     blast_out_df = pd.read_csv(blast_table, sep='\t', header = None, \
@@ -103,23 +165,36 @@ def find_coverage(input_file, reference, path_to_blast):
 
     # length of reference sequence
     reference_length = len(list(SeqIO.parse(reference, "fasta"))[0].seq) 
-    print(list(SeqIO.parse(reference, "fasta"))[0])
+    print("Reference sequence ID: {}".format(list(SeqIO.parse(reference, "fasta"))[0].id))
+
     #list for sequence counts in each position
+    print('Calculating coverage using blast results')
+    t1 = time()
+    pos_coverage = make_cov_list(blast_out_df,reference_length, 0)
+    '''
     global pos_coverage
     pos_coverage = [0]*reference_length
 
+    print('Calculating coverage using blast results')
+    t1 = time()
     def add_cov(row):
         for i in range(row["sstart"]-1, row["send"], 1):
             pos_coverage[i] +=1
-    blast_out_df.apply(add_cov, axis=1)
 
-    plt.hist(range(1,len(pos_coverage)+1,1), bins= range(1,len(pos_coverage)+1,1), weights = pos_coverage)
-    plt.xlabel("Position in genome, nt")
-    plt.ylabel("Number of sequences in GenBank")
-    plt.xlim(0,len(pos_coverage))
-    plt.savefig(os.path.splitext(input_file)[0]+"_"+ref_id+"_cov.svg")
-    plt.savefig(os.path.splitext(input_file)[0]+"_"+ref_id+"cov_.png")
-    plt.clf()
+
+    blast_out_df.apply(add_cov, axis=1)
+    '''
+    t2 = time()
+    print('Finished\n Time: {:.4}'.format(t2-t1))
+
+    print('Drawing coverage plot')
+    t1 = time()
+    # title for pictures
+    pic_title = os.path.splitext(os.path.split(input_file)[1])[0] + '_' + ref_id
+    plot_cov(pos_coverage, os.path.split(input_file)[0], pic_title)
+    t2 = time()
+    print('Finished\n Time {:.4}'.format(t2-t1))
+
 #    plt.show()
     return pos_coverage
 
@@ -146,6 +221,7 @@ if __name__ == "__main__":
         print("File with sequences or query for Nucleotide database are not defined. \
         Please, use genbank_coverage.py --help")
     else:
+        # reads input file
         if os.path.exists(args.input_file):
             out_directory = os.path.split(args.input_file)[0]
             file_ext = os.path.splitext(args.input_file)[1]
@@ -178,11 +254,7 @@ if __name__ == "__main__":
         # returns list with sequence counts for each position in sequence
         pos_coverage = find_coverage(args.input_file, args.reference, args.path_blast)
 
+        # saves list with coverage to a text file
         fout_cov = open(os.path.splitext(args.input_file)[0]+"_"+args.reference.strip('fasta')+"_cov.txt", "w")
         fout_cov.write(",".join(str(x) for x in pos_coverage))
         fout_cov.close()
-
-
-
-
-
