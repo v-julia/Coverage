@@ -54,7 +54,7 @@ are saved in *input_dir*. For each query sequence finds the blast table with max
  draws a coverage plot, saves coverage values to output dir.
 
 ### Usage
-
+```
 merge_coverages.py [-h] -i INPUT_DIR -o OUTPUT_DIR -al ALIGNMENT -t
                       TITLE
 
@@ -69,7 +69,7 @@ optional arguments:
   -t TITLE, --title TITLE
                         Title of output file figure
 
-
+```
 ### Requirements:
 
 * argparse
@@ -92,7 +92,7 @@ performs standalone blast against reference sequences from *reference*, saves bl
 Then merges results using merge_coverage.py. Draws a coverage plot and saves coverage values to the directory of input file.
 
 ### Usage
-
+```
 genbank_coverage_complex.py [-h] [-i INPUT_FILE] [-q QUERY] -ref
                                REFERENCE -t TITLE -path_blast PATH_BLAST
                                -path_mafft PATH_MAFFT
@@ -113,6 +113,7 @@ optional arguments:
                         Path to blast program
   -path_mafft PATH_MAFFT, --path_mafft PATH_MAFFT
                         Path to mafft program
+```
 
 ### Requirements:
 
