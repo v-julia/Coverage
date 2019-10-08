@@ -1,7 +1,7 @@
 # Coverage
 This folder contains python scripts that calculate coverage of reference nucleotide sequence by some set of sequences.
 
-In paper "The effect of sample bias and experimental artifacts on statistical phylogenetic analysis of picornaviruses" (in review) these scripts were used to show the coverage of most common picornavirus species genomes by sequences availabe in GenBank Nucleotide database.
+In paper "The effect of sample bias and experimental artifacts on statistical phylogenetic analysis of picornaviruses" (in review) these scripts were used to show the coverage of most common picornavirus species genomes by sequences available in GenBank Nucleotide database.
 
 ## Requirements
 
