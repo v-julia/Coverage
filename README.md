@@ -21,10 +21,10 @@ Other programms:
 ## genbank_coverage.py
 
 
-Performs standalone blast of sequences from *input_file* against reference sequence, saves blast output table in 'blast_out' folder.
-Checks whether sequence from *input_file* overlaps with reference sequence, calculates coverage for each position of reference, plots coverage, 
-saves coverage values in the directory of *input_file*. If *input_file* doesn't exist, loads sequences from GenBank Nucleotide database 
-using *query*, saves them in fasta-format in current working directory.
+Performs standalone blast of sequences from `input_file` against reference sequence, saves blast output table in `blast_out` folder.
+Checks whether sequence from `input_file` overlaps with reference sequence, calculates coverage for each position of reference, plots coverage, 
+saves coverage values in the directory of `input_file`. If `input_file` doesn't exist, loads sequences from GenBank Nucleotide database 
+using `query`, saves them in fasta-format in current working directory.
 
 
 ### Usage
@@ -52,7 +52,7 @@ optional arguments:
 
 
 Calculates coverage using several blast outputs (blasts against several reference sequences) which 
-are saved in *input_dir*. For each query sequence finds the blast table with maximal hit length,
+are saved in `input_dir`. For each query sequence finds the blast table with maximal hit length,
  merges rows with maximal hit lengths from different blast tables, calculates final coverage, 
  draws a coverage plot, saves coverage values to output dir.
 
@@ -73,26 +73,14 @@ optional arguments:
                         Title of output file figure
 
 ```
-### Requirements:
 
-* argparse
-* Biopython
-* matplotlib
-* subprocess
-* pandas
-* numpy
-* pathlib
-* time
-* genbank_coverage
-* standalone blast
-* mafft
 
                         
 ##  genbank_coverage_complex.py
 
-For each sequences in *input_file* (or sequences loaded from GenBank nucleotide using query) 
-performs standalone blast against reference sequences from *reference*, saves blast output table in 'blast_out' folder.
-Then merges results using merge_coverage.py. Draws a coverage plot and saves coverage values to the directory of input file.
+For each sequences in `input_file` (or sequences loaded from GenBank nucleotide using query) 
+performs standalone blast against reference sequences from `reference`, saves blast output table in `blast_out` folder.
+Then merges results using `merge_coverage.py`. Draws a coverage plot and saves coverage values to the directory of input file.
 
 ### Usage
 ```
