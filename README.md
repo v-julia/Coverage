@@ -1,5 +1,20 @@
 # Coverage
-This folder contains python scripts that calculate coverage of reference nucleotide sequence by some set of sequences. 
+This folder contains python scripts that calculate coverage of reference nucleotide sequence by some set of sequences. In paper "The effect of sample bias and experimental artifacts on statistical phylogenetic analysis of picornaviruses" (in review) these scripts were used to show the coverage of most common picornavirus species genomes by sequences availabe in GenBank Nucleotide database.
+
+## Requirements
+
+Python libraries:
+
+* numpy==1.16.4
+* pandas==0.24.2
+* matplotlib==3.1.0
+* Bio==0.1.0
+
+Other programms:
+
+* standalone blast
+* mafft
+
 
 ## genbank_coverage.py
 
@@ -29,19 +44,6 @@ optional arguments:
   -path_blast PATH_BLAST, --path_blast PATH_BLAST
                         Path to blast program
 ```
-
-### Requirements:
-
-* argparse
-* Biopython
-* matplotlib
-* subprocess
-* pandas
-* numpy
-* pathlib
-* time
-* standalone blast
-* mafft
 
 
 ##  merge_coverages.py
@@ -113,17 +115,3 @@ optional arguments:
   -path_mafft PATH_MAFFT, --path_mafft PATH_MAFFT
                         Path to mafft program
 ```
-
-### Requirements:
-
-* argparse
-* Biopython
-* matplotlib
-* subprocess
-* pandas
-* numpy
-* pathlib
-* time
-* genbank_coverage
-* standalone blast
-* mafft
