@@ -31,12 +31,12 @@ if __name__ == "__main__":
                         help="Path to mafft program",  required = True)
     args = parser.parse_args()
 
-    if not (args.input_file or args.args.query):
+    if not (args.input_file or args.query):
         print("File with sequences or query for Nucleotide database are not defined. \
         Please, use genbank_coverage.py --help")
     else:
         # reads sequences from file if it exists
-        if os.path.exists(args.input_file):
+        if args.input_file != None:
             out_directory = os.path.split(args.input_file)[0]
             file_ext = os.path.splitext(args.input_file)[1]
             # converts genbank to fasta
