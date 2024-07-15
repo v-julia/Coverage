@@ -112,7 +112,7 @@ def merges_coverage(input_dir, out_dir, path_alignment, title):
     for i in range(len(length_df)):
         seq_id = length_df.index[i]
         table = blast_out_dict[length_df[i]]
-        blast_table_new = blast_table_new.append(table[table['qseqid']==seq_id], ignore_index=True)
+        blast_table_new = blast_table_new._append(table[table['qseqid']==seq_id], ignore_index=True)
     t2 = time()
     print('Finished. Time: {:.4} '.format(t2-t1))
     print(blast_table_new)
