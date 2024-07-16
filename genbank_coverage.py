@@ -11,7 +11,7 @@ from pathlib import Path
 from time import time
 
 
-def fetch_from_GB(query):
+def fetch_from_GB(query, filename="file.fasta"):
     '''
     Downloads sequences found using query from GenBank
     Writes them to file in fasta-format
@@ -20,12 +20,15 @@ def fetch_from_GB(query):
     Output:
         f_name - str - name of ouput file with sequences in fasta-format
     '''
-    Entrez.email = "vjulia94@gmail.com"
+    Entrez.email = "A.N.Other@example.com"
     # list with ids obtained by query
-    id_list = Entrez.read(Entrez.esearch(db="nucleotide", term=query, idtype="acc"))['IdList']
-
+    record = Entrez.read(Entrez.esearch(db="nucleotide", term=query, idtype="acc", RetMax=1000000))
+    id_list = record['IdList']
+    print("Query to GenBank Nucleotide database:\"{}\"".format(query))
+    print("Number of records found: {}".format(record["Count"]))
+    print("{} records will be downloaded".format(len(id_list)))
     # output file with sequences will be saved in current working dir
-    f_name = Path(os.getcwd(),"file.fasta")
+    f_name = Path(os.getcwd(),filename)
 
     # output file wuth sequences in fasta format
     file_out = open(f_name, 'w')
@@ -110,7 +113,7 @@ def find_coverage(input_file, reference, path_to_blast):
     Input:
         input_file - name of file with sequences in fasta format
         reference - name of file with reference sequence, fasta format
-        output_dir - output directory to save fasta file with sequences that overlap with reference
+        path_to_blast - Path to blast program
     Output:
         pos_coverage - list - list with coverage counts in each position of reference sequence
     '''

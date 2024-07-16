@@ -1,11 +1,13 @@
 import argparse
 import os
 import sys
+import time
+
 from Bio import SeqIO
 from pathlib import Path
+
 from genbank_coverage import fetch_from_GB, find_coverage
 from merge_coverages import merges_coverage
-from time import time
 
 """
 For each sequences in input_file (or sequences loaded from GenBank nucleotide using query) 
@@ -37,6 +39,7 @@ if __name__ == "__main__":
     else:
         # reads sequences from file if it exists
         if args.input_file != None:
+            # ADD EXCEPTION ERROR IF INPUT FILE DOES NOT EXIST
             out_directory = os.path.split(args.input_file)[0]
             file_ext = os.path.splitext(args.input_file)[1]
             # converts genbank to fasta
@@ -65,24 +68,36 @@ if __name__ == "__main__":
 
 
         # searches reference sequence in file with sequences downloaded from GenBank
-        print("Checking the presence of reference sequences")
+        print("Checking the presence of reference sequences in loaded entries/file")
         
-        # all records loaded from GenBank
-        records = SeqIO.to_dict(SeqIO.parse(args.input_file, "fasta"))
+        
         for ref_seq_id in args.reference:
             print(ref_seq_id)
-            if os.path.exists(Path(os.path.split(args.input_file)[0],ref_seq_id+".fasta")):
-                ref_f_name = str(Path(os.path.split(args.input_file)[0],ref_seq_id+".fasta"))
+            time.sleep(2)
+            ref_f_name = str(Path(out_directory,ref_seq_id+".fasta"))
+            # First check whether file with reference in present in current directory
+            if os.path.exists(ref_f_name):
                 ref_seq = list(SeqIO.parse(ref_f_name, "fasta"))[0]
                 ref_records_list.append(ref_seq)
+            # Then check whether reference sequences are present in input file
             else:
+                print("Searching reference sequences in input file")
+                time.sleep(2) 
+                # all records loaded from GenBank
+                records = SeqIO.to_dict(SeqIO.parse(args.input_file, "fasta"))
                 if ref_seq_id in records.keys():
                      ref_seq = SeqIO.to_dict(SeqIO.parse(args.input_file, "fasta"))[ref_seq_id]
                      ref_records_list.append(ref_seq)
                      ref_f_name = os.path.join(out_directory,ref_seq_id+'.fasta')
                      SeqIO.write(ref_seq, ref_f_name, "fasta")
-                else: 
-                    ref_f_name = fetch_from_GB(ref_seq_id)
+                # Otherwise download from GenBank Nucleotide
+                else:
+                    print("Loading reference sequences")
+                    time.sleep(2) 
+                    ref_f_name = fetch_from_GB(ref_seq_id, ref_f_name)
+                    ref_seq = list(SeqIO.parse(ref_f_name, "fasta"))[0]
+                    ref_records_list.append(ref_seq)
+                    
             ref_files_list.append(ref_f_name)
 
         # writes reference sequence to one file
@@ -90,7 +105,7 @@ if __name__ == "__main__":
         SeqIO.write(ref_records_list, reference_file_n, "fasta")
         print("Finished. Reference sequences were saved in {}".format(reference_file_n))
         
-        t0 = time()
+        t0 = time.time()
         # aligns reference sequences
         print("Aligning reference sequences")
         reference_aln_file_n = str(Path(os.path.split(args.input_file)[0],"reference_aln.fasta"))
@@ -108,16 +123,16 @@ if __name__ == "__main__":
             # founds coverage of reference sequence by sequences downloaded from GenBank
             pos_coverage = find_coverage(args.input_file, ref_seq_file, args.path_blast)
             # writes coverage to the text file
-            fout_cov = open(input_dir+"_"+ref_seq_id+"_cov.txt", "w")
+            fout_cov = open(input_dir+ref_seq_id+"_cov.txt", "w")
             fout_cov.write(",".join(str(x) for x in pos_coverage))
             fout_cov.close()
 
         out_dir = str(Path(input_dir, "blast_out"))
         print('Merging blast results from different reference sequences')
-        t1 = time()
+        t1 = time.time()
         merges_coverage(out_dir, input_dir, reference_aln_file_n, args.title)
-        t2 = time()
+        t2 = time.time()
         print("Finished merging {:.4}".format(t2-t1))
 
-        tn = time()
+        tn = time.time()
         print('Total time {:.4}'.format(tn-t0))

@@ -39,7 +39,7 @@ def merges_coverage(input_dir, out_dir, path_alignment, title):
         blast_out_dict[name] = pd.read_csv(Path(input_dir,name), sep='\t', header = None, \
                                 names=['qseqid','sseqid','pident','length','mismatch',\
                                 'gapopen','qstart','qend','sstart','send','evalue','bitscore']) #.transpose()
-        print(name,len(blast_out_dict[name]))
+        print("File name:{}, number of rows:{}".format(name,len(blast_out_dict[name])))
 
     # list with ids of all blast hits from all files
     seq_ids_all = []
