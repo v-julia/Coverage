@@ -160,7 +160,17 @@ def find_coverage(input_file, reference, path_to_blast):
     #print(blast_table)
 
     print('Finished')
-
+    
+    if sys.platform == "win32" or sys.platform == "cygwin":
+        remove_db_command = "del {}*".format(local_db)
+    else:
+        remove_db_command = "rm {}*".format(local_db)
+    
+    try:
+        subprocess.call(remove_db_command, shell=True)
+    except:
+        print("Could not remove blast db")
+    
     #dataframe with blast results
     blast_out_df = pd.read_csv(blast_table, sep='\t', header = None, \
                                 names=['qseqid','sseqid','pident','length','mismatch',\
