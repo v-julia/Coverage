@@ -25,8 +25,8 @@ if __name__ == "__main__":
     parser.add_argument("-ref", "--reference", type=str,
                         help="List with reference sequences'ids (with version!) separated by comma. \
                         Example: AB084913.1,AB0834732.2", required= True)
-    parser.add_argument("-t", "--title", type=str,
-                        help="Title for coverage plot", required= True)
+    parser.add_argument("-f", "--figname", type=str,
+                        help="Name for final figure with coverage (without extension)", required= True)
     parser.add_argument("-path_blast", "--path_blast", type=str,
                         help="Path to blast program",  required = True)
     parser.add_argument("-path_mafft", "--path_mafft", type=str,
@@ -130,7 +130,7 @@ if __name__ == "__main__":
         out_dir = str(Path(input_dir, "blast_out"))
         print('Merging blast results from different reference sequences')
         t1 = time.time()
-        merges_coverage(out_dir, input_dir, reference_aln_file_n, args.title)
+        merges_coverage(out_dir, input_dir, reference_aln_file_n, args.figname)
         t2 = time.time()
         print("Finished merging {:.4}".format(t2-t1))
 

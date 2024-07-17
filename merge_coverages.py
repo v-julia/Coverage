@@ -157,7 +157,7 @@ def merges_coverage(input_dir, out_dir, path_alignment, title):
     t1 = time()
     final_coverage = make_cov_list(blast_table_new, reference_length, 1)
     t2 = time()
-    print('Finished. TIme: {:.4}'.format(t2-t1))
+    print('Finished. Time: {:.4}'.format(t2-t1))
     plot_cov(final_coverage, out_dir, title+'_plot')
 
     '''
