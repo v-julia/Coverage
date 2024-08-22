@@ -91,15 +91,14 @@ genbank_coverage_complex.py [-h] [-i INPUT_FILE] [-q QUERY] -ref
 optional arguments:
   -h, --help            show this help message and exit
   -i INPUT_FILE, --input_file INPUT_FILE
-                        File with sequences in fasta or genbank format for
-                        calculating coverage
+                        File with sequences in fasta or genbank format for calculating coverage
   -q QUERY, --query QUERY
                         Query for GenBank Nucleotide database
   -ref REFERENCE, --reference REFERENCE
-                        List with reference sequences'ids (with version!)
-                        separated by comma. Example: AB084913.1,AB0834732.2
-  -t TITLE, --title TITLE
-                        Title for coverage plot
+                        List with reference sequences'ids (with version!) separated by comma. Example:
+                        AB084913.1,AB0834732.2
+  -f FIGNAME, --figname FIGNAME
+                        Name for final figure with coverage (without extension)
   -path_blast PATH_BLAST, --path_blast PATH_BLAST
                         Path to blast program
   -path_mafft PATH_MAFFT, --path_mafft PATH_MAFFT
